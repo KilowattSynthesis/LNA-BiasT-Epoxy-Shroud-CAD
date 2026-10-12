@@ -85,12 +85,12 @@ class Spec:
     adapter_mean_dia: float = 8.0  # For epoxy displacement estimate.
 
     # ---- Shell design parameters ----
-    wall: float = 1.0
+    wall: float = 0.85
     clearance_xy: float = 1.5  # Epoxy gap around boards/wires.
     end_wall_gap: float = 0.3  # Gap between SMA flange and end wall.
-    floor_gap: float = 1.0  # Epoxy under the lowest part (adapter hex).
+    floor_gap: float = 0.3  # Epoxy under the lowest part (adapter hex).
     epoxy_cover: float = 1.7  # Epoxy above the tallest part (shield can).
-    lip_above_fill: float = 1.0  # Wall height above the fill line.
+    lip_above_fill: float = 0.5  # Wall height above the fill line.
     slot_clearance: float = 0.25  # Diametral clearance on the SMA thread.
     plug_clearance: float = 0.15  # Per side, plug-to-slot fit.
 
