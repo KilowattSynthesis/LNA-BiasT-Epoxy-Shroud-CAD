@@ -304,6 +304,34 @@ def slot_plug(spec: Spec) -> bd.Part | bd.Compound:
     return p
 
 
+def assembly(spec: Spec) -> bd.Compound:
+    """Assembly of the shell, both slot plugs, and the device envelope."""
+    # Lift the plugs out of their slots so they're visible.
+    plug_lift = 10.0
+    plug = slot_plug(spec)
+
+    shell = potting_shell(spec)
+    shell.label = "potting_shell"
+
+    plug_left = plug.moved(bd.Pos(0, 0, plug_lift))
+    plug_left.label = "slot_plug_left"
+
+    # Rotate 180 deg about Z, landing it on the right end wall.
+    plug_right = plug.moved(
+        bd.Pos(spec.inner_x_min + spec.inner_x_max, 0, plug_lift)
+        * bd.Rot(0, 0, 180)
+    )
+    plug_right.label = "slot_plug_right"
+
+    envelope = device_envelope(spec)
+    envelope.label = "device_envelope_reference"
+
+    return bd.Compound(
+        label="assembly",
+        children=[shell, plug_left, plug_right, envelope],
+    )
+
+
 def log_epoxy_estimate(spec: Spec) -> None:
     """Log how much potting epoxy the shell will take."""
     fill_volume = cavity(spec, spec.fill_z).volume  # mm^3
@@ -332,12 +360,13 @@ if __name__ == "__main__":
     log_epoxy_estimate(spec)
 
     parts = {
-        "potting_shell": show(potting_shell(spec)),
-        "slot_plug": show(slot_plug(spec)),
-        "device_envelope_reference": (device_envelope(spec)),
+        "potting_shell": potting_shell(spec),
+        "slot_plug": slot_plug(spec),
+        "device_envelope_reference": device_envelope(spec),
     }
 
     logger.info("Showing CAD model(s)")
+    show(assembly(spec))
 
     (export_folder := Path(__file__).parent.with_name("build")).mkdir(
         exist_ok=True
