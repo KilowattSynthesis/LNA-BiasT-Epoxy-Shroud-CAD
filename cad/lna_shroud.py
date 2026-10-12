@@ -12,7 +12,9 @@ Coordinate system:
 - Z: Z=0 is the SMA axis, which is also the mid-plane of both PCBs
   (edge-launch connectors straddle the board).
 
-The shell is an open-top tray with 1 mm walls. The two end SMA connectors exit
+The shell is an open-top tray with 1 mm walls. On the -X (LNA) side, a narrow
+pocket extends past the RFin SMA to also pot the start of the next part in the
+chain (screwed onto that SMA). The far SMA connectors at each end exit
 through U-slots in the end walls; the assembly drops in from the top and the
 connector threads rest in the bottom of the U-slots, self-locating it.
 Print two `slot_plug` parts and glue them into the U-slots above the threads
@@ -75,6 +77,11 @@ class Spec:
     wire_loop_max_y_lna: float = 15.2
     wire_loop_max_y_tee: float = 11.8
 
+    # Next part in the chain, screwed onto the left (RFin) SMA. The pocket
+    # extends this far in -X past the end of the left SMA thread (no margin).
+    next_part_protrusion_x: float = 16.0
+    next_part_width_y: float = 10.0  # Nominal, centred on the SMA axis.
+
     # ---- Typical part dimensions (NOT measurable from photo - check!) ----
     pcb_thickness: float = 1.6
     lna_shield_height: float = 4.5  # Above top of LNA PCB.
@@ -133,7 +140,12 @@ class Spec:
 
     @property
     def inner_x_min(self) -> float:
-        """Inner face of the left end wall."""
+        """Inner face of the left end wall (end of the next-part pocket)."""
+        return self.left_sma_thread_x[0] - self.next_part_protrusion_x
+
+    @property
+    def lna_section_x_min(self) -> float:
+        """Where the wide LNA section steps down to the next-part pocket."""
         return self.left_sma_flange_x[0] - self.end_wall_gap
 
     @property
@@ -161,6 +173,12 @@ class Spec:
         )
 
     @property
+    def next_part_section_y(self) -> tuple[float, float]:
+        """Inner Y extent of the next-part pocket (left of the LNA)."""
+        half = self.next_part_width_y / 2 + self.clearance_xy
+        return (-half, half)
+
+    @property
     def lna_section_x_max(self) -> float:
         """Where the wide LNA section steps down to the narrow section."""
         return self.lna_board_x[1] + self.clearance_xy
@@ -172,6 +190,13 @@ def cavity(spec: Spec, z_top: float) -> bd.Part | bd.Compound:
     p = bd.Part(None)
     p += box_from_bounds(
         spec.inner_x_min,
+        spec.lna_section_x_min + 0.01,  # Small overlap for a clean union.
+        *spec.next_part_section_y,
+        z0,
+        z_top,
+    )
+    p += box_from_bounds(
+        spec.lna_section_x_min,
         spec.lna_section_x_max,
         *spec.lna_section_y,
         z0,
@@ -245,9 +270,18 @@ def potting_shell(spec: Spec) -> bd.Part | bd.Compound:
     # Outer: the cavity grown by the wall thickness on every side but the top.
     lna_y = spec.lna_section_y
     tee_y = spec.tee_section_y
+    next_y = spec.next_part_section_y
     z0 = spec.floor_top_z - w
     p += box_from_bounds(
         spec.inner_x_min - w,
+        spec.lna_section_x_min,
+        next_y[0] - w,
+        next_y[1] + w,
+        z0,
+        spec.wall_top_z,
+    )
+    p += box_from_bounds(
+        spec.lna_section_x_min - w,
         spec.lna_section_x_max + w,
         lna_y[0] - w,
         lna_y[1] + w,
