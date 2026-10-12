@@ -304,7 +304,7 @@ def slot_plug(spec: Spec) -> bd.Part | bd.Compound:
     return p
 
 
-def assembly(spec: Spec) -> bd.Compound:
+def assembly_preview(spec: Spec) -> bd.Compound:
     """Assembly of the shell, both slot plugs, and the device envelope."""
     # Lift the plugs out of their slots so they're visible.
     plug_lift = 10.0
@@ -325,6 +325,8 @@ def assembly(spec: Spec) -> bd.Compound:
 
     envelope = device_envelope(spec)
     envelope.label = "device_envelope_reference"
+    # Not printed; semi-transparent so the shell stays readable.
+    envelope.color = bd.Color("green", alpha=0.5)
 
     return bd.Compound(
         label="assembly",
@@ -366,7 +368,7 @@ if __name__ == "__main__":
     }
 
     logger.info("Showing CAD model(s)")
-    show(assembly(spec))
+    show(assembly_preview(spec))
 
     (export_folder := Path(__file__).parent.with_name("build")).mkdir(
         exist_ok=True
