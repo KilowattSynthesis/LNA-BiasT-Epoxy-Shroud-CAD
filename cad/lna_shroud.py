@@ -27,19 +27,19 @@ from build123d_ease import show
 from loguru import logger
 
 
-def box_from_bounds(
+def box_from_bounds(  # noqa: PLR0913
     x0: float, x1: float, y0: float, y1: float, z0: float, z1: float
 ) -> bd.Part:
     """Create a box from min/max coordinates."""
-    return bd.Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) * bd.Box(
-        x1 - x0, y1 - y0, z1 - z0
+    return bd.Box(x1 - x0, y1 - y0, z1 - z0).moved(
+        bd.Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
     )
 
 
 def x_cylinder(x0: float, x1: float, radius: float) -> bd.Part:
     """Create a cylinder along the X axis, centred on the SMA axis."""
-    return bd.Pos((x0 + x1) / 2, 0, 0) * (
-        bd.Rot(0, 90, 0) * bd.Cylinder(radius=radius, height=x1 - x0)
+    return bd.Cylinder(radius=radius, height=x1 - x0).moved(
+        bd.Pos((x0 + x1) / 2, 0, 0) * bd.Rot(0, 90, 0)
     )
 
 
@@ -102,7 +102,7 @@ class Spec:
         assert self.wall > 0
         assert self.lna_board_x[1] <= self.adapter_x[0] + 0.01
         assert self.adapter_x[1] <= self.tee_board_x[0] + 0.01
-        # The slot must be narrower than the SMA flange, or the part slides out.
+        # The slot must be narrower than SMA flange, or the part slides out.
         assert self.slot_width < self.sma_flange_size
 
     # ---- Derived values ----
@@ -166,7 +166,7 @@ class Spec:
         return self.lna_board_x[1] + self.clearance_xy
 
 
-def cavity(spec: Spec, z_top: float) -> bd.Part:
+def cavity(spec: Spec, z_top: float) -> bd.Part | bd.Compound:
     """Inner volume of the shell, from the floor up to `z_top`."""
     z0 = spec.floor_top_z
     p = bd.Part(None)
@@ -187,7 +187,7 @@ def cavity(spec: Spec, z_top: float) -> bd.Part:
     return p
 
 
-def device_envelope(spec: Spec) -> bd.Part:
+def device_envelope(spec: Spec) -> bd.Part | bd.Compound:
     """Approximate solid model of the traced assembly (for displacement)."""
     t = spec.pcb_thickness
     p = bd.Part(None)
@@ -227,7 +227,9 @@ def device_envelope(spec: Spec) -> bd.Part:
     return p
 
 
-def slot_cutter(spec: Spec, x0: float, x1: float, width: float) -> bd.Part:
+def slot_cutter(
+    spec: Spec, x0: float, x1: float, width: float
+) -> bd.Part | bd.Compound:
     """U-shaped cutter: half-cylinder at the SMA axis, open to the top."""
     p = bd.Part(None)
     p += x_cylinder(x0, x1, width / 2)
@@ -320,7 +322,7 @@ def log_epoxy_estimate(spec: Spec) -> None:
         f"Mix ~{epoxy_ml * 1.2:.0f} mL to allow ~20% for cup/stick losses."
     )
     logger.info(
-        f"Fill line is {spec.fill_z - spec.floor_top_z:.1f} mm above the floor "
+        f"Fill line is {spec.fill_z - spec.floor_top_z:.1f} mm above floor "
         f"({spec.epoxy_cover} mm over the shield can)."
     )
 
