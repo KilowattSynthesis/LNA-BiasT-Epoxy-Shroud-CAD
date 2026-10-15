@@ -140,6 +140,12 @@ def tube_shroud(spec: Spec) -> bd.Part | bd.Compound:
         )
     )
 
+    # Remove spot for grounding wires.
+    for x in [-10, 10]:
+        p -= bd.Pos(X=x, Y=-2, Z=spec.shroud_h - 10) * bd.Cylinder(
+            radius=1, height=20
+        )
+
     # Remove the antenna volume.
     p -= bd.Pos(
         Z=spec.bottom_wall_thickness
