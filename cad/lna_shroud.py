@@ -404,9 +404,10 @@ if __name__ == "__main__":
     logger.info("Showing CAD model(s)")
     show(assembly_preview(spec))
 
-    (export_folder := Path(__file__).parent.with_name("build")).mkdir(
-        exist_ok=True
-    )
+    (
+        export_folder := Path(__file__).parent.with_name("build")
+        / Path(__file__).stem
+    ).mkdir(exist_ok=True, parents=True)
     for name, part in parts.items():
         assert isinstance(part, bd.Part | bd.Solid | bd.Compound), (
             f"{name} is not an expected type ({type(part)})"
