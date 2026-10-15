@@ -11,7 +11,8 @@ from loguru import logger
 class Spec:
     """Specification for tube_shroud."""
 
-    shroud_od: float = 33.5
+    shroud_od: float = 33.5  # Pipe ID.
+    pipe_od: float = 43.0
     # 43 OD, 33.8 ID
 
     sma_hole_d: float = 6.0 + 0.2
@@ -33,6 +34,12 @@ class Spec:
     # Bias tee is 15mm: 5mm on one side and 10mm on the other.
 
     bottom_wall_thickness: float = 1.8
+
+    registration_ball_d: float = 0.0
+
+    top_wall_thickness: float = 4.0
+    side_wall_thickness: float = 4.0
+    side_wall_height: float = 25.0
 
     enable_go_out_top: bool = False
 
@@ -70,6 +77,7 @@ def tube_shroud(spec: Spec) -> bd.Part | bd.Compound:
         align=bde.align.ANCHOR_BOTTOM,
     )
 
+    # Remove the SMA hole volume out the bottom.
     p -= bd.Cylinder(
         radius=spec.sma_hole_d / 2,
         height=spec.shroud_h,
@@ -108,6 +116,30 @@ def tube_shroud(spec: Spec) -> bd.Part | bd.Compound:
         align=bde.align.ANCHOR_BOTTOM,
     )
 
+    # For render, remove half of everything.
+    p -= bd.Pos(Y=-3.5) * bd.Box(
+        spec.shroud_od,
+        spec.shroud_h,
+        200,
+        align=(bd.Align.CENTER, bd.Align.MAX, bd.Align.MIN),
+    )
+
+    # Add the top wall.
+    p += bd.Part() + (
+        bd.Pos(Z=spec.shroud_h)
+        * bd.Cylinder(
+            radius=spec.pipe_od / 2 + spec.side_wall_thickness,
+            height=spec.top_wall_thickness + spec.side_wall_height,
+            align=bde.align.ANCHOR_TOP,
+        )
+        - bd.Pos(Z=spec.shroud_h - spec.top_wall_thickness)
+        * bd.Cylinder(
+            radius=spec.pipe_od / 2,
+            height=spec.top_wall_thickness + spec.side_wall_height,
+            align=bde.align.ANCHOR_TOP,
+        )
+    )
+
     # Remove the antenna volume.
     p -= bd.Pos(
         Z=spec.bottom_wall_thickness
@@ -120,13 +152,22 @@ def tube_shroud(spec: Spec) -> bd.Part | bd.Compound:
         align=bde.align.ANCHOR_BOTTOM,
     )
 
-    # For render, remove half of everything.
-    p -= bd.Box(
-        spec.shroud_od,
-        spec.shroud_h,
-        200,
-        align=(bd.Align.CENTER, bd.Align.MAX, bd.Align.MIN),
-    )
+    # Add a registration ball to the halves.
+    if spec.registration_ball_d:
+        ball_x_pos = (
+            spec.sma_joiner_d / 2
+            + (spec.shroud_od / 2 - spec.sma_joiner_d / 2) / 2
+        )
+        p -= bd.Pos(
+            Z=spec.shroud_h / 2,
+            X=ball_x_pos,
+            Y=0.01,
+        ) * bd.Sphere(radius=spec.registration_ball_d / 2)
+        p += bd.Pos(
+            Z=spec.shroud_h / 2,
+            X=-ball_x_pos,
+            Y=0.01,
+        ) * bd.Sphere(radius=spec.registration_ball_d / 2)
 
     return p
 
