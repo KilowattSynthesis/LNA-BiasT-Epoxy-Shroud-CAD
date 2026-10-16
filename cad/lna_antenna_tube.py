@@ -12,7 +12,7 @@ class Spec:
     """Specification for tube_shroud."""
 
     shroud_od: float = 33.5  # Pipe ID.
-    pipe_od: float = 43.0
+    pipe_od: float = 42.8
     # 43 OD, 33.8 ID
 
     sma_hole_d: float = 6.0 + 0.2
@@ -24,14 +24,20 @@ class Spec:
     lna_length_axial: float = 33.0
     lna_thickness: float = 8.0
 
-    sma_joiner_length_axial: float = 36.0
+    sma_joiner_length_axial: float = 30.7
     sma_joiner_d: float = 13.0
 
-    bias_tee_length_axial: float = 25.0 + 2.0  # Add square connector bit.
+    bias_tee_length_axial: float = 20.0 + 2.0  # Add square connector bit.
     bias_tee_width: float = 15 + 3.0
     bias_tee_thickness: float = 8.0
-    bias_tee_shift: float = 2.5
+    bias_tee_shift: float = -2.5
     # Bias tee is 15mm: 5mm on one side and 10mm on the other.
+
+    extra_pcb_length_axial: float = 3.0
+    """Extra PCB length to extend into the "SMA joiner" section.
+
+    Extends both the bias tee and LNA.
+    """
 
     bottom_wall_thickness: float = 1.8
 
@@ -91,7 +97,11 @@ def tube_shroud(spec: Spec) -> bd.Part | bd.Compound:
     ) * bd.Box(
         spec.bias_tee_width,
         spec.bias_tee_thickness,
-        spec.bias_tee_length_axial + spec.go_out_top_num,
+        (
+            spec.bias_tee_length_axial
+            + spec.extra_pcb_length_axial
+            + spec.go_out_top_num
+        ),
         align=bde.align.ANCHOR_BOTTOM,
     )
 
@@ -109,15 +119,18 @@ def tube_shroud(spec: Spec) -> bd.Part | bd.Compound:
         Z=spec.bottom_wall_thickness
         + spec.bias_tee_length_axial
         + spec.sma_joiner_length_axial
+        - spec.extra_pcb_length_axial
     ) * bd.Box(
         spec.lna_width,
         spec.lna_thickness,
-        spec.lna_length_axial + spec.go_out_top_num,
+        spec.lna_length_axial
+        + spec.extra_pcb_length_axial
+        + spec.go_out_top_num,
         align=bde.align.ANCHOR_BOTTOM,
     )
 
     # For render, remove half of everything.
-    p -= bd.Pos(Y=-3.5) * bd.Box(
+    p -= bd.Pos(Y=-4) * bd.Box(
         spec.shroud_od,
         spec.shroud_h,
         200,
